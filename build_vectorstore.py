@@ -17,8 +17,8 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 # テキスト読み込みとチャンク分割
 # ========================
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=200,
-    chunk_overlap=20,
+    chunk_size=500,  # 200から500に増加
+    chunk_overlap=50,  # 20から50に増加
     length_function=len,
     separators=["\n\n", "\n", "。", "、", " ", ""]
 )

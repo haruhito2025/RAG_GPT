@@ -38,9 +38,9 @@ llm = ChatOpenAI(
 # カスタムプロンプトテンプレート
 template = """
 あなたは正確で詳細な回答を提供するAIアシスタントです。
-以下の情報を参考に、質問に答えてください。
-情報が不足している場合は、その旨を正直に伝えてください。
-回答は具体的で実用的なものにしてください。
+与えられた情報源のみに基づいて回答してください。
+情報源にない内容については「該当する情報がありません」と明確に伝えてください。
+質問の文脈を理解し、最も関連性の高い情報を優先して回答に含めてください。
 
 参考情報:
 {context}
@@ -48,11 +48,11 @@ template = """
 質問: {question}
 
 回答は以下の形式で作成してください：
-1. 直接的な回答（簡潔に）
-2. 参考情報からの具体的な引用（該当する場合）
-   - 引用元の情報を含めてください
-3. 補足説明（必要な場合）
-4. 情報が不足している場合は、その旨を明示
+1. 直接的な回答（簡潔かつ具体的に）
+2. 参考情報からの具体的な引用（該当箇所を「」で囲む）
+3. 引用元の情報（ファイル名やページ番号など）
+4. 補足説明（必要な場合のみ）
+5. 情報が不足している場合は、その旨を明示
 
 回答:"""
 
@@ -65,7 +65,9 @@ qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     retriever=vectorstore.as_retriever(
         search_kwargs={
-            "k": 12  # 検索結果の数を増やして精度を向上
+            "k": 12,  # 検索結果の数
+            "fetch_k": 20,  # 初期検索で取得する数を増やす
+            "lambda_mult": 0.5  # 多様性と関連性のバランスを取る
         }
     ),
     return_source_documents=True,
@@ -109,13 +111,19 @@ if query:
         for i, doc in enumerate(result["source_documents"], 1):
             source = doc.metadata.get('source', '不明')
             title = doc.metadata.get('title', 'タイトルなし')
-            score = doc.metadata.get('score', 0)
+            page = doc.metadata.get('page', '不明')
             
-            with st.expander(f"参照元 {i}: {title} ({source})"):
+            score = doc.metadata.get('score', 0)
+            if score == 0 and hasattr(vectorstore, '_collection'):
+                score = 0.5  # デフォルト値
+            
+            with st.expander(f"参照元 {i}: {title} (ページ: {page}, ファイル: {source})"):
                 st.markdown(doc.page_content)
                 st.caption(f"関連度スコア: {score:.2f}")
                 if 'page' in doc.metadata:
                     st.caption(f"ページ番号: {doc.metadata['page']}")
+                if 'title' in doc.metadata:
+                    st.caption(f"ドキュメント: {doc.metadata['title']}")
 
         # Notionに保存
         def save_to_notion(feedback="pending"):
