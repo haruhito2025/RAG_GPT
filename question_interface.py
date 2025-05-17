@@ -65,9 +65,7 @@ qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     retriever=vectorstore.as_retriever(
         search_kwargs={
-            "k": 12,  # 検索結果の数
-            "fetch_k": 20,  # 初期検索で取得する数を増やす
-            "lambda_mult": 0.5  # 多様性と関連性のバランスを取る
+            "k": 12  # 検索結果の数
         }
     ),
     return_source_documents=True,
