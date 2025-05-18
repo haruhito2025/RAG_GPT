@@ -4,3 +4,4 @@ __pycache__/
 chroma_db/
 venv/
 .DS_Store
+scraped_text/
